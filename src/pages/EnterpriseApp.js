@@ -29,10 +29,10 @@ const DEVICE_ID = getOrCreateDeviceId();
 const categories = ["All", "Plush Toys", "Educational", "Action Figures", "Games & Puzzles"];
 
 const toyImages = {
-    "Plush Toys": "https://source.unsplash.com/featured/?plush-toy",
-    "Educational": "https://source.unsplash.com/featured/?educational-toy",
-    "Action Figures": "https://source.unsplash.com/featured/?action-figure",
-    "Games & Puzzles": "https://source.unsplash.com/featured/?puzzle-toy"
+    "Plush Toys": "/images/plush_toy",
+    "Educational": "/images/educational_toy",
+    "Action Figures": "/images/action_toy",
+    "Games & Puzzles": "/images/puzzle_toy"
 };
 
 const generateAnonName = () => {
@@ -263,7 +263,7 @@ const EnterpriseApp = () => {
                 name: `${category} #${i + 1}`,
                 category,
                 price: (Math.random() * 100).toFixed(2),
-                image: `${toyImages[category]}&sig=${i}`
+                image: `${toyImages[category]}_${i+1}.png`
             };
         });
         setItems(generatedItems);
