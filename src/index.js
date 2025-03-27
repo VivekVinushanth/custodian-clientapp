@@ -6,8 +6,8 @@ import theme from "./theme"; // Import the custom theme
 import { AuthProvider } from '@asgardeo/auth-react';
 
 const authConfig = {
-    signInRedirectURL: "http://localhost:3000",
-    signOutRedirectURL: "http://localhost:3000",
+    signInRedirectURL: "https://a8cb2cd1-0b15-4861-810c-d148b964d3a0.e1-us-east-azure.choreoapps.dev/",
+    signOutRedirectURL: "https://a8cb2cd1-0b15-4861-810c-d148b964d3a0.e1-us-east-azure.choreoapps.dev/",
     clientID: "mFk7qN0cvcOqDDnDB0h7OXp3dR8a",
     baseUrl: "https://api.asgardeo.io/t/vanheim",
     scope: ["openid", "profile"],
