@@ -1,5 +1,5 @@
 {
-  "name": "custodianconsole",
+  "name": "custodianclientApp",
   "version": "1.0.0",
   "main": "src/App.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "@mui/material": "^6.4.7",
     "axios": "^1.8.3",
     "cors": "^2.8.5",
+    "profile-tracker-react-sdk": "file:../profile-tracker-react-sdk",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.3.0",

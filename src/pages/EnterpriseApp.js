@@ -9,10 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuthContext  } from "@asgardeo/auth-react";
 import theme from "../theme";
 import EnterpriseAppBanner from "../components/ui/appadvertbanner";
-
-const APP_ID = "custodian_client_app";
-const EVENT_API = `http://localhost:8080/api/v1/${APP_ID}/event`;
-const PROFILE_API = "http://localhost:8080/api/v1/profile/";
+import { tracker, getPermaId } from "profile-tracker-react-sdk";
 
 const getOrCreateDeviceId = () => {
     let id = localStorage.getItem("device_id");
@@ -23,7 +20,6 @@ const getOrCreateDeviceId = () => {
     return id;
 };
 const DEVICE_ID = getOrCreateDeviceId();
-// const { getDecodedIDToken } = useAuthContext();
 
 
 const categories = ["All", "Plush Toys", "Educational", "Action Figures", "Games & Puzzles"];
@@ -68,7 +64,6 @@ const EnterpriseApp = () => {
     const { state, signIn, signOut, getDecodedIDToken } = useAuthContext();
 
     const [geoInfo, setGeoInfo] = useState({ ip: "0.0.0.0", city: "Unknown", country: "Unknown", timezone: "UTC" });
-    const [permaId, setPermaId] = useState(null);
     const [user, setUser] = useState(null);
     const [anonName, setAnonName] = useState(() => getOrCreateAnonName());
     const [cart, setCart] = useState([]);
@@ -77,6 +72,20 @@ const EnterpriseApp = () => {
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [preferences, setPreferences] = useState([]);
+
+    useEffect(() => {
+        if (searchQuery.trim() === "") return;
+
+        const delayDebounce = setTimeout(() => {
+            tracker.track("search", {
+                action: "type",
+                objecttype: "search_box",
+                objectname: searchQuery
+            });
+        }, 600); // delay to avoid firing too frequently
+
+        return () => clearTimeout(delayDebounce);
+    }, [searchQuery]);
 
 
     const categoryColors = {
@@ -88,7 +97,7 @@ const EnterpriseApp = () => {
     };
 
     const fetchPersonalityPreferences = (permaId) => {
-        if (!permaId) return;
+        // if (!permaId) return;
 
         fetch(`http://localhost:8080/api/v1/${permaId}/profile/personality/`)
             .then(res => res.json())
@@ -99,97 +108,9 @@ const EnterpriseApp = () => {
             .catch(err => console.error("Error fetching personality preferences:", err));
     };
 
-    const getContextInfo = () => {
-        const browser = getBrowserInfo();
-        return {
-            ip: geoInfo.ip,
-            userAgent: navigator.userAgent,
-            device: {
-                type: "desktop",
-                os: navigator.platform,
-                browser: browser.name,
-                browser_version: browser.version
-            },
-            location: {
-                country: geoInfo.country,
-                city: geoInfo.city,
-                timezone: geoInfo.timezone
-            }
-        };
-    };
-
-    const sendEvent = (eventType, eventName, properties = {}) => {
-        if (!permaId) return;
-        const payload = {
-            perma_id: permaId,
-            event_type: eventType,
-            event_name: eventName,
-            event_id: uuidv4(),
-            app_id: APP_ID,
-            event_timestamp: new Date().toISOString(),
-            locale: "en-US",
-            context: getContextInfo(),
-            properties
-        };
-        fetch(EVENT_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-    };
-
-    const sendEventWithPerma = (id, eventType, eventName, properties = {}) => {
-        const payload = {
-            perma_id: id,
-            event_type: eventType,
-            event_name: eventName,
-            event_id: uuidv4(),
-            app_id: APP_ID,
-            event_timestamp: new Date().toISOString(),
-            locale: "en-US",
-            context: getContextInfo(),
-            properties
-        };
-        fetch(EVENT_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        }).catch(err => console.error("Failed to send event:", err));
-    };
-
-
-    const createProfile = (identity = {}, plan = "free", user_ids = []) => {
-        const payload = {
-            origin_country: geoInfo.country,
-            identity,
-            app_context: [{
-                device_id: DEVICE_ID,
-                app_id: APP_ID,
-                subscription_plan: plan,
-                app_permissions: ["read"],
-                feature_flags: { dark_mode: false },
-                last_active_app: "web",
-                devices: [{ device_id: DEVICE_ID, device_type: "desktop", last_used: new Date().toISOString() }]
-            }],
-            user_ids: user_ids,
-            personality: {}
-        };
-        return fetch(PROFILE_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        }).then(res => res.json());
-    };
-
-    // const handleLogout = () => {
-    //     sessionStorage.clear();      // clear session data
-    //     localStorage.clear();        // optionally clear device_id etc.
-    //     signOut();                   // triggers logout from Asgardeo
-    // };
-
     const handleLogout = () => {
         // Do NOT remove cart here
-        sendEvent("identify", "user_logged_out", {
+        tracker.identify("user_logged_out", {
             user_id: user?.user_id,
             username: user?.username,
             email: user?.email,
@@ -204,11 +125,6 @@ const EnterpriseApp = () => {
 
     useEffect(() => {
 
-        const existingPermaId = sessionStorage.getItem("perma_id");
-        if (existingPermaId) {
-            setPermaId(existingPermaId);
-        }
-
         fetch("https://ipapi.co/json/")
             .then(res => res.json())
             .then(data => {
@@ -219,19 +135,13 @@ const EnterpriseApp = () => {
                     timezone: data.timezone || "UTC"
                 };
                 setGeoInfo(info);
-
-                createProfile({ country: info.country, timezone: info.timezone }).then(data => {
-                    if (data.perma_id) {
-                        sessionStorage.setItem("perma_id", data.perma_id);
-                        setPermaId(data.perma_id);
-                        sendEventWithPerma(data.perma_id, "identify", "guest_user_session", {
-                            username: anonName,
-                            device_id: DEVICE_ID
-                        });
-                        fetchPersonalityPreferences(data.perma_id);
-                    }
+                tracker.identify("guest_user_session", {
+                    username: anonName,
+                    device_id: DEVICE_ID
                 });
-            });
+                setTimeout(() => {
+                    fetchPersonalityPreferences(getPermaId());
+                }, 5000);                });
 
         setItems(Array.from({ length: 10 }).map((_, i) => ({
             id: uuidv4(),
@@ -239,8 +149,6 @@ const EnterpriseApp = () => {
             price: (Math.random() * 100).toFixed(2),
             image: `https://source.unsplash.com/150x150/?toy,kids&sig=${i}`
         })));
-
-        window.addEventListener("scroll", () => sendEvent("track", "page_scrolled"));
         return () => window.removeEventListener("scroll", () => {});
     }, []);
 
@@ -271,42 +179,35 @@ const EnterpriseApp = () => {
 
     useEffect(() => {
         if (state.isAuthenticated) {
+            console.log("are we not authenticated?")
             getDecodedIDToken().then(decodedIDToken => {
                 const userData = {
                     user_id: decodedIDToken.sub,
-                    username: decodedIDToken.username,
+                    user_name: decodedIDToken.username,
                     email: decodedIDToken.email,
+                    first_name: decodedIDToken?.given_name,
+                    last_name: decodedIDToken?.family_name,
                     idp_provider: "Asgardeo"
                 };
+
                 setUser(userData);
                 sessionStorage.setItem("user", JSON.stringify(userData));
 
-                createProfile({
-                    country: geoInfo.country,
-                    timezone: geoInfo.timezone,
-                    email: decodedIDToken.email,
-                    username: decodedIDToken.username,
-                    first_name: decodedIDToken.given_name || "" ,
-                    last_name: decodedIDToken.family_name || ""
-                }, "premium", [decodedIDToken.sub] ).then(data => {
-                    if (data.perma_id) {
-                        sessionStorage.setItem("perma_id", data.perma_id);
-                        setPermaId(data.perma_id);
-                        if (decodedIDToken.sub) {
-                            sendEvent("identify", "user_logged_in", userData);
-                        } else {
-                            sendEvent("identify", "guest_user_session_with_id", userData);
-                        }
-                        fetchPersonalityPreferences(data.perma_id);
-                    }
-                });
+                if (getPermaId()) {
+                    tracker.identify("user_logged_in", userData);
+
+                    // Delay the fetchPersonalityPreferences call by 5 minutes (300,000 ms)
+                    setTimeout(() => {
+                        fetchPersonalityPreferences(getPermaId());
+                    }, 5000);                }
             });
+
         }
     }, [state.isAuthenticated]);
 
     const addToCart = (item) => {
         setCart(prev => [...prev, item]);
-        sendEvent("track", "add_to_cart", {
+        tracker.track("add_to_cart", {
             action: "click",
             objecttype: "product",
             objectname: item.name,
@@ -316,7 +217,7 @@ const EnterpriseApp = () => {
 
     const handleCheckout = () => {
         if (!user) return signIn();
-        sendEvent("track", "purchase_initiated", {
+        tracker.track("purchase_initiated", {
             object_type: "cart",
             value: cart.reduce((sum, item) => sum + parseFloat(item.price), 0).toFixed(2)
         });
@@ -334,13 +235,13 @@ const EnterpriseApp = () => {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                         <IconButton color="inherit" onClick={() => {
                             setCartOpen(true);
-                            sendEvent("track", "cart_opened");
+                            tracker.track("cart_opened")
                         }}>
                             <Badge badgeContent={cart.length} color="secondary">
                                 <ShoppingCartIcon />
                             </Badge>
                         </IconButton>
-                        <Typography variant="body2">{user?.username || anonName}</Typography>
+                        <Typography variant="body2">{user?.user_name || anonName}</Typography>
                         {user ? (
                             <Button onClick={handleLogout} variant="contained" color="secondary">
                                 Logout
@@ -387,14 +288,15 @@ const EnterpriseApp = () => {
                             onClick={() => {
                                 setSelectedCategory(cat);
                                 if (cat !== "All") { // ✅ Condition added here
-                                    sendEvent("track", "category_searched", {
+                                    tracker.track("category_searched", {
                                         action: "select_category",
                                         objecttype: "category",
                                         objectname: cat
                                     });
                                 }
-                                fetchPersonalityPreferences(permaId);
-                            }
+                                setTimeout(() => {
+                                    fetchPersonalityPreferences(getPermaId());
+                                }, 5000);                                }
                         }
                         />
                     ))}
