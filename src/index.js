@@ -11,7 +11,7 @@ const authConfig = {
     signOutRedirectURL: "http://localhost:3000",
     clientID: "mK67JnpQhteBsXwNUb_jnFsdiXka",
     baseUrl: "https://localhost:9443",
-    scope: ["openid", "profile"],
+    scope: ["openid", "profile", "phone"],
     endpoints: {
         authorizationEndpoint: "https://localhost:9443/oauth2/authorize",
         tokenEndpoint: "https://localhost:9443/oauth2/token",
@@ -26,7 +26,7 @@ const authConfig = {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
     <AuthProvider config={authConfig}>
-        <AnalyticsProvider clientId="mK67JnpQhteBsXwNUb_jnFsdiXka">
+        <AnalyticsProvider clientId="custodian_client_app" orgId="carbon.super">
             <ThemeProvider theme={theme}>
                 <CssBaseline />
                 <App />

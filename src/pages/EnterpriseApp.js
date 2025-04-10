@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuthContext  } from "@asgardeo/auth-react";
 import theme from "../theme";
 import EnterpriseAppBanner from "../components/ui/appadvertbanner";
-import { tracker, getPermaId } from "profile-tracker-react-sdk";
+import { tracker, getPermaId, clear } from "profile-tracker-react-sdk";
 
 const getOrCreateDeviceId = () => {
     let id = localStorage.getItem("device_id");
@@ -72,6 +72,9 @@ const EnterpriseApp = () => {
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [preferences, setPreferences] = useState([]);
+    const [newsletterOpen, setNewsletterOpen] = useState(false);
+    const [newsletterEmail, setNewsletterEmail] = useState("");
+    const [showNewsletterBanner, setShowNewsletterBanner] = useState(true);
 
     useEffect(() => {
         if (searchQuery.trim() === "") return;
@@ -99,7 +102,7 @@ const EnterpriseApp = () => {
     const fetchPersonalityPreferences = (permaId) => {
         // if (!permaId) return;
 
-        fetch(`http://localhost:8080/api/v1/${permaId}/profile/personality/`)
+        fetch(`http://localhost:8900/api/v1/${permaId}/profile/personality/`)
             .then(res => res.json())
             .then(data => {
                 const updatedPrefs = data.interests || ["All"];
@@ -119,6 +122,7 @@ const EnterpriseApp = () => {
         sessionStorage.removeItem("user");
         sessionStorage.removeItem("cart");
 
+        // todo: clear the session state
         signOut();
     };
 
@@ -187,6 +191,7 @@ const EnterpriseApp = () => {
                     email: decodedIDToken.email,
                     first_name: decodedIDToken?.given_name,
                     last_name: decodedIDToken?.family_name,
+                    phone_number: decodedIDToken?.phone_number,
                     idp_provider: "Asgardeo"
                 };
 
@@ -229,6 +234,41 @@ const EnterpriseApp = () => {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
+            {showNewsletterBanner && (
+                <Box
+                    sx={{
+                        position: "fixed",
+                        top: 80,
+                        right: 24,
+                        zIndex: 1300,
+                        backgroundColor: "#f9fbe7",
+                        border: "1px solid #cddc39",
+                        borderRadius: 2,
+                        px: 2,
+                        py: 1,
+                        boxShadow: 3,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1
+                    }}
+                >
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>📬 Get toy deals!</Typography>
+                    <Button
+                        size="small"
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setNewsletterOpen(true)}
+                    >
+                        Subscribe
+                    </Button>
+                    <IconButton
+                        size="small"
+                        onClick={() => setShowNewsletterBanner(false)}
+                    >
+                        ✕
+                    </IconButton>
+                </Box>
+            )}
             <AppBar position="static">
                 <Toolbar sx={{ justifyContent: "space-between" }}>
                     <Typography variant="h6">Enterprise E-Commerce</Typography>
