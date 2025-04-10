@@ -75,6 +75,18 @@ const EnterpriseApp = () => {
     const [newsletterOpen, setNewsletterOpen] = useState(false);
     const [newsletterEmail, setNewsletterEmail] = useState("");
     const [showNewsletterBanner, setShowNewsletterBanner] = useState(true);
+    const [campaign2Count, setCampaign2Count] = useState(0);
+    const [spendingCapability, setSpendingCapability] = useState("normal");
+    const [personality, setPersonality] = useState({});
+
+    const fetchPersonalityPreferences = (permaId) => {
+        fetch(`http://localhost:8900/api/v1/${permaId}/profile/personality/`)
+            .then(res => res.json())
+            .then(data => {
+                setPersonality(data); // 👈 store full personality object here
+            })
+            .catch(err => console.error("Error fetching personality preferences:", err));
+    };
 
     useEffect(() => {
         if (searchQuery.trim() === "") return;
@@ -97,18 +109,6 @@ const EnterpriseApp = () => {
         "Action Figures": "#BBDEFB",   // Soft Blue
         "Games & Puzzles": "#FFE0B2",  // Soft Orange
         "All": "#E0E0E0"               // Neutral Grey
-    };
-
-    const fetchPersonalityPreferences = (permaId) => {
-        // if (!permaId) return;
-
-        fetch(`http://localhost:8900/api/v1/${permaId}/profile/personality/`)
-            .then(res => res.json())
-            .then(data => {
-                const updatedPrefs = data.interests || ["All"];
-                setPreferences(updatedPrefs); // 🌟 Central control
-            })
-            .catch(err => console.error("Error fetching personality preferences:", err));
     };
 
     const handleLogout = () => {
@@ -308,7 +308,7 @@ const EnterpriseApp = () => {
             </AppBar>
 
             <Container maxWidth="lg" sx={{ py: 4 }}>
-                <EnterpriseAppBanner preferences={preferences} />
+                <EnterpriseAppBanner preferences={personality} items={items} />
 
                 <TextField
                     fullWidth
@@ -375,6 +375,42 @@ const EnterpriseApp = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <Dialog open={newsletterOpen} onClose={() => setNewsletterOpen(false)}>
+                <DialogTitle>Subscribe to our Newsletter</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Email Address"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                        value={newsletterEmail}
+                        onChange={(e) => setNewsletterEmail(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setNewsletterOpen(false)}>Cancel</Button>
+                    <Button
+                        onClick={() => {
+                            tracker.track("newsletter_subscribed", {
+                                email: newsletterEmail,
+                                device_id: DEVICE_ID,
+                                username: anonName,
+                                newsletter_subscribed:true
+                            });
+                            setNewsletterOpen(false);
+                            setShowNewsletterBanner(false);
+                            setNewsletterEmail("");
+                            alert("🎉 Subscribed successfully!");
+                        }}
+                        disabled={!newsletterEmail}
+                    >
+                        Subscribe
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </ThemeProvider>
     );
 };

@@ -22,6 +22,10 @@ const EnterpriseAppBanner = ({ preferences }) => {
         price: (Math.random() * 100 + 10).toFixed(2)
     })));
 
+    const interests = preferences?.interests || ["All"];
+    const spendingCapability = preferences?.spending_capability || "normal";
+    const campaign2Opened = preferences?.campaign_2_opened || 0;
+
     const categoryColors = {
         "Plush Toys": "#FFCDD2",
         "Educational": "#C8E6C9",
@@ -34,7 +38,7 @@ const EnterpriseAppBanner = ({ preferences }) => {
         "Plush Toys": [
             {
                 title: "💖 Cuddle Up Savings!",
-                description: "Buy 2 Plush Toys, Get 1 Free! Softness overload—perfect friends for every bedtime story!",
+                description: "Softness overload—perfect friends for every bedtime story!",
                 category: "Plush Toys"
             },
             {
@@ -46,7 +50,7 @@ const EnterpriseAppBanner = ({ preferences }) => {
         "Educational": [
             {
                 title: "🧠 Learn, Play & Save!",
-                description: "Flat 20% OFF on all Educational Toys. Empower your child’s creativity and critical thinking!",
+                description: "OFF on all Educational Toys. Empower your child’s creativity and critical thinking!",
                 category: "Educational"
             },
             {
@@ -70,7 +74,7 @@ const EnterpriseAppBanner = ({ preferences }) => {
         "Games & Puzzles": [
             {
                 title: "🏆 Family Fun Fiesta!",
-                description: "Buy one Puzzle or Game and get the second at 50% off! Perfect for family game nights.",
+                description: "Buy one Puzzle or Game and get the second off! Perfect for family game nights.",
                 category: "Games & Puzzles"
             },
             {
@@ -89,24 +93,68 @@ const EnterpriseAppBanner = ({ preferences }) => {
             }
         ]
     };
-
     useEffect(() => {
-        if (!preferences?.length) {
-            setBanners(offerBanners["All"]);
-            return;
-        }
+        const isHighSpender = spendingCapability === "high";
+        let selectedBanners = [];
 
-        let collected = [];
-        preferences.forEach(pref => {
-            if (offerBanners[pref]) {
-                collected = [...collected, ...offerBanners[pref]];
-            }
+        // 🎉 Always include general seasonal offer
+        selectedBanners.push(...offerBanners["All"].map(b => ({
+            ...b,
+            campaign_id: "seasonal",
+            offer_value: 25
+        })));
+
+        // 🎯 Personalized offers
+        interests.forEach(pref => {
+            const baseBanners = offerBanners[pref] || [];
+
+            const enriched = baseBanners.map(banner => {
+                let campaign_id = 1;
+                let offer_value = 50;
+
+                if (isHighSpender) {
+                    campaign_id = 2;
+                    offer_value = 10;
+
+                    if (campaign2Opened > 3) {
+                        campaign_id = 3;
+                        offer_value = 20;
+                    }
+                }
+
+                return {
+                    ...banner,
+                    campaign_id,
+                    offer_value
+                };
+            });
+
+            selectedBanners.push(...enriched);
         });
 
-        if (collected.length === 0) collected = offerBanners["All"];
-        setBanners(collected);
+        setBanners(selectedBanners);
         setCurrentBanner(0);
     }, [preferences]);
+
+
+
+    // useEffect(() => {
+    //     if (!preferences?.length) {
+    //         setBanners(offerBanners["All"]);
+    //         return;
+    //     }
+    //
+    //     let collected = [];
+    //     preferences.forEach(pref => {
+    //         if (offerBanners[pref]) {
+    //             collected = [...collected, ...offerBanners[pref]];
+    //         }
+    //     });
+    //
+    //     if (collected.length === 0) collected = offerBanners["All"];
+    //     setBanners(collected);
+    //     setCurrentBanner(0);
+    // }, [preferences]);
 
     useEffect(() => {
         if (!banners.length) return;
@@ -140,6 +188,9 @@ const EnterpriseAppBanner = ({ preferences }) => {
     };
 
     const discountedPrice = selectedItem ? (selectedItem.price * 0.75).toFixed(2) : 0;
+    const availableItems = items.filter(item =>
+        item.category === current.category
+    );
 
     const handleConfirm = () => {
         tracker.track("purchase_initiated", {
@@ -159,7 +210,18 @@ const EnterpriseAppBanner = ({ preferences }) => {
                 elevation={4}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
-                onClick={() => current.campaign_id === "seasonal" && setOfferModalOpen(true)}
+                onClick={() => {
+                    tracker.track("campaigned_opened", {
+                        campaign_id: current.campaign_id,
+                        offer_value: current.offer_value
+                    });
+
+                    // open modal only for interest-based campaigns, not general seasonal
+                    if (current.campaign_id !== "seasonal") {
+                        setOfferModalOpen(true);
+                    }
+                }}
+
                 sx={{
                     p: 2,
                     mb: 2,
@@ -167,13 +229,29 @@ const EnterpriseAppBanner = ({ preferences }) => {
                     position: "relative",
                     backgroundColor: bgColor,
                     transition: "background-color 0.3s ease",
-                    cursor: current.campaign_id === "seasonal" ? "pointer" : "default"
+                    cursor: current.campaign_id === "seasonal" ? "pointer" : "default",
+                    animation: current.campaign_id === "campaign_2" && campaign2Opened > 2 ? "vibrate 0.3s infinite" : "none"
+
                 }}
             >
                 <Fade in={fadeIn} timeout={400}>
                     <div>
                         <Typography variant="h6">{current.title}</Typography>
                         <Typography variant="body1">{current.description}</Typography>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                fontWeight: "bold",
+                                color: "#d50000",
+                                fontSize: "1rem",
+                                animation: "blast 1.5s ease-in-out infinite",
+                                display: "inline-block",
+                                mt: 1
+                            }}
+                        >
+                            🏷️ Offer: {current.offer_value}% OFF
+                        </Typography>
+
                     </div>
                 </Fade>
 
