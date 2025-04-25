@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:8080/api/v1";
+const API_BASE_URL = "http://localhost:8900/api/v1";
 
 export const fetchProfiles = async () => {
     try {
@@ -12,12 +12,12 @@ export const fetchProfiles = async () => {
     }
 };
 
-export const fetchUserDetails = async (permaId) => {
+export const fetchUserDetails = async (profileId) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/${permaId}/profile`);
+        const response = await axios.get(`${API_BASE_URL}/${profileId}/profile`);
         return response.data;
     } catch (error) {
-        console.error(`Error fetching user details for ${permaId}:`, error);
+        console.error(`Error fetching user details for ${profileId}:`, error);
         return null;
     }
 };

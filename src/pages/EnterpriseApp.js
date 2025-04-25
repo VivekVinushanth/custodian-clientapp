@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuthContext  } from "@asgardeo/auth-react";
 import theme from "../theme";
 import EnterpriseAppBanner from "../components/ui/appadvertbanner";
-import { tracker, getPermaId, clear } from "profile-tracker-react-sdk";
+import { tracker, getProfileId, clear } from "profile-tracker-react-sdk";
 
 const getOrCreateDeviceId = () => {
     let id = localStorage.getItem("device_id");
@@ -79,8 +79,8 @@ const EnterpriseApp = () => {
     const [spendingCapability, setSpendingCapability] = useState("normal");
     const [personality, setPersonality] = useState({});
 
-    const fetchPersonalityPreferences = (permaId) => {
-        fetch(`http://localhost:8900/api/v1/${permaId}/profile/personality/`)
+    const fetchPersonalityPreferences = (profileId) => {
+        fetch(`http://localhost:8900/api/v1/${profileId}/profile/personality`)
             .then(res => res.json())
             .then(data => {
                 setPersonality(data); // 👈 store full personality object here
@@ -144,7 +144,7 @@ const EnterpriseApp = () => {
                     device_id: DEVICE_ID
                 });
                 setTimeout(() => {
-                    fetchPersonalityPreferences(getPermaId());
+                    fetchPersonalityPreferences(getProfileId());
                 }, 5000);                });
 
         setItems(Array.from({ length: 10 }).map((_, i) => ({
@@ -198,12 +198,12 @@ const EnterpriseApp = () => {
                 setUser(userData);
                 sessionStorage.setItem("user", JSON.stringify(userData));
 
-                if (getPermaId()) {
+                if (getProfileId()) {
                     tracker.identify("user_logged_in", userData);
 
                     // Delay the fetchPersonalityPreferences call by 5 minutes (300,000 ms)
                     setTimeout(() => {
-                        fetchPersonalityPreferences(getPermaId());
+                        fetchPersonalityPreferences(getProfileId());
                     }, 5000);                }
             });
 
@@ -335,7 +335,7 @@ const EnterpriseApp = () => {
                                     });
                                 }
                                 setTimeout(() => {
-                                    fetchPersonalityPreferences(getPermaId());
+                                    fetchPersonalityPreferences(getProfileId());
                                 }, 5000);                                }
                         }
                         />
