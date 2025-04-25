@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuthContext  } from "@asgardeo/auth-react";
 import theme from "../theme";
 import EnterpriseAppBanner from "../components/ui/appadvertbanner";
-import { tracker, getProfileId } from "profile-tracker-react-sdk";
+import { tracker, getProfileId, getBaseUrl } from "profile-tracker-react-sdk";
 
 const getOrCreateDeviceId = () => {
     let id = localStorage.getItem("device_id");
@@ -99,7 +99,7 @@ const EnterpriseApp = () => {
     const fetchPersonalityPreferences = (profileId) => {
         // if (!profileId) return;
 
-        fetch(`http://localhost:8900/api/v1/${profileId}/profile/personality/`)
+        fetch(getBaseUrl()+`/api/v1/${profileId}/profile/personality`)
             .then(res => res.json())
             .then(data => {
                 const updatedPrefs = data.interests || ["All"];
