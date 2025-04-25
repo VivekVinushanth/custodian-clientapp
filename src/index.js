@@ -26,7 +26,7 @@ const authConfig = {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
     <AuthProvider config={authConfig}>
-        <AnalyticsProvider clientId="custodian_client_app" orgId="carbon.super">
+        <AnalyticsProvider clientId="custodian_client_app" orgId="carbon.super" baseUrl="http://localhost:8900">
             <ThemeProvider theme={theme}>
                 <CssBaseline />
                 <App />

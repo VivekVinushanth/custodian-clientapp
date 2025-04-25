@@ -7,7 +7,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { tracker } from "profile-tracker-react-sdk";
 
-const EnterpriseAppBanner = ({ preferences }) => {
+const EnterpriseAppBanner = ({ traits }) => {
     const [currentBanner, setCurrentBanner] = useState(0);
     const [banners, setBanners] = useState([]);
     const [hovered, setHovered] = useState(false);
@@ -22,9 +22,9 @@ const EnterpriseAppBanner = ({ preferences }) => {
         price: (Math.random() * 100 + 10).toFixed(2)
     })));
 
-    const interests = preferences?.interests || ["All"];
-    const spendingCapability = preferences?.spending_capability || "normal";
-    const campaign2Opened = preferences?.campaign_2_opened || 0;
+    const interests = traits?.interests || ["All"];
+    const spendingCapability = traits?.spending_capability || "normal";
+    const campaign2Opened = traits?.campaign_2_opened || 0;
 
     const categoryColors = {
         "Plush Toys": "#FFCDD2",
@@ -93,6 +93,7 @@ const EnterpriseAppBanner = ({ preferences }) => {
             }
         ]
     };
+
     useEffect(() => {
         const isHighSpender = spendingCapability === "high";
         let selectedBanners = [];
@@ -134,27 +135,7 @@ const EnterpriseAppBanner = ({ preferences }) => {
 
         setBanners(selectedBanners);
         setCurrentBanner(0);
-    }, [preferences]);
-
-
-
-    // useEffect(() => {
-    //     if (!preferences?.length) {
-    //         setBanners(offerBanners["All"]);
-    //         return;
-    //     }
-    //
-    //     let collected = [];
-    //     preferences.forEach(pref => {
-    //         if (offerBanners[pref]) {
-    //             collected = [...collected, ...offerBanners[pref]];
-    //         }
-    //     });
-    //
-    //     if (collected.length === 0) collected = offerBanners["All"];
-    //     setBanners(collected);
-    //     setCurrentBanner(0);
-    // }, [preferences]);
+    }, [traits]);
 
     useEffect(() => {
         if (!banners.length) return;

@@ -1,6 +1,7 @@
 import axios from "axios";
+import getBaseUrl from "profile-tracker-react-sdk";
 
-const API_BASE_URL = "http://localhost:8900/api/v1";
+const API_BASE_URL = getBaseUrl() + "/api/v1";
 
 export const fetchProfiles = async () => {
     try {

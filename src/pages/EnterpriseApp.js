@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useAuthContext  } from "@asgardeo/auth-react";
 import theme from "../theme";
 import EnterpriseAppBanner from "../components/ui/appadvertbanner";
-import { tracker, getProfileId, clear } from "profile-tracker-react-sdk";
+import { tracker, getProfileId, clear, getBaseUrl } from "profile-tracker-react-sdk";
 
 const getOrCreateDeviceId = () => {
     let id = localStorage.getItem("device_id");
@@ -80,9 +80,10 @@ const EnterpriseApp = () => {
     const [personality, setPersonality] = useState({});
 
     const fetchPersonalityPreferences = (profileId) => {
-        fetch(`http://localhost:8900/api/v1/${profileId}/profile/personality`)
+        fetch(getBaseUrl()+`/api/v1/profiles/${profileId}/traits`)
             .then(res => res.json())
             .then(data => {
+                console.log("Traits1:", data);
                 setPersonality(data); // 👈 store full personality object here
             })
             .catch(err => console.error("Error fetching personality preferences:", err));
