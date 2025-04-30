@@ -77,16 +77,24 @@ const EnterpriseApp = () => {
     const [showNewsletterBanner, setShowNewsletterBanner] = useState(true);
     const [campaign2Count, setCampaign2Count] = useState(0);
     const [spendingCapability, setSpendingCapability] = useState("normal");
-    const [personality, setPersonality] = useState({});
+    const [traits, setTraits] = useState({});
 
-    const fetchPersonalityPreferences = (profileId) => {
-        fetch(getBaseUrl()+`/api/v1/profiles/${profileId}/traits`)
-            .then(res => res.json())
-            .then(data => {
-                console.log("Traits1:", data);
-                setPersonality(data); // 👈 store full personality object here
-            })
-            .catch(err => console.error("Error fetching personality preferences:", err));
+    const fetchPersonalityPreferences = async (profileId) => {
+        try {
+            const response = await fetch(`${getBaseUrl()}/api/v1/profiles/${profileId}`);
+            const data = await response.json();
+
+            console.log("🌟 Full profile response:", data);
+            if (data?.traits) {
+                console.log(" Setting traits:", data.traits);
+                setTraits(data.traits);
+            } else {
+                console.warn(" Traits not found in profile response");
+                setTraits({});
+            }
+        } catch (err) {
+            console.error("❌ Error fetching personality preferences:", err);
+        }
     };
 
     useEffect(() => {
@@ -309,7 +317,9 @@ const EnterpriseApp = () => {
             </AppBar>
 
             <Container maxWidth="lg" sx={{ py: 4 }}>
-                <EnterpriseAppBanner preferences={personality} items={items} />
+                {traits && Object.keys(traits).length > 0 && (
+                    <EnterpriseAppBanner traits={traits} items={items} />
+                )}
 
                 <TextField
                     fullWidth

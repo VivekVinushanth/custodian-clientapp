@@ -22,7 +22,7 @@ const EnterpriseAppBanner = ({ traits }) => {
         price: (Math.random() * 100 + 10).toFixed(2)
     })));
 
-    const interests = traits?.interests || ["All"];
+    const interests = (traits?.interests?.length > 0 ? traits.interests : ["All"]);
     const spendingCapability = traits?.spending_capability || "normal";
     const campaign2Opened = traits?.campaign_2_opened || 0;
 
