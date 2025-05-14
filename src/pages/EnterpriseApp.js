@@ -56,13 +56,8 @@ const getBrowserInfo = () => {
     return { name: "Unknown", version: "" };
 };
 
-
-
-
-
 const EnterpriseApp = () => {
-    const { state, signIn, signOut, getDecodedIDToken } = useAuthContext();
-
+    const { state, signIn, signOut, getDecodedIDToken, getAccessToken } = useAuthContext();
     const [geoInfo, setGeoInfo] = useState({ ip: "0.0.0.0", city: "Unknown", country: "Unknown", timezone: "UTC" });
     const [user, setUser] = useState(null);
     const [anonName, setAnonName] = useState(() => getOrCreateAnonName());
@@ -79,18 +74,36 @@ const EnterpriseApp = () => {
     const [spendingCapability, setSpendingCapability] = useState("normal");
     const [traits, setTraits] = useState({});
 
-    const fetchPersonalityPreferences = async (profileId) => {
+    const fetchPersonalityPreferences = async () => {
         try {
-            const response = await fetch(`${getBaseUrl()}/api/v1/profiles/${profileId}`);
-            const data = await response.json();
+            if (state.isAuthenticated) {
+                const token = await getAccessToken();
+                const response = await fetch(`${getBaseUrl()}/api/v1/profiles/Me`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                console.log("🌟 Authenticated profile response:", data);
 
-            console.log("🌟 Full profile response:", data);
-            if (data?.traits) {
-                console.log(" Setting traits:", data.traits);
-                setTraits(data.traits);
+                if (data?.traits) {
+                    setTraits(data.traits);
+                } else {
+                    setTraits({});
+                }
             } else {
-                console.warn(" Traits not found in profile response");
-                setTraits({});
+                const profileId = getProfileId();
+                if (!profileId) return;
+
+                const response = await fetch(`${getBaseUrl()}/api/v1/profiles/${profileId}`);
+                const data = await response.json();
+                console.log("🌟 Guest profile response:", data);
+
+                if (data?.traits) {
+                    setTraits(data.traits);
+                } else {
+                    setTraits({});
+                }
             }
         } catch (err) {
             console.error("❌ Error fetching personality preferences:", err);
@@ -153,7 +166,7 @@ const EnterpriseApp = () => {
                     device_id: DEVICE_ID
                 });
                 setTimeout(() => {
-                    fetchPersonalityPreferences(getProfileId());
+                    fetchPersonalityPreferences();
                 }, 5000);                });
 
         setItems(Array.from({ length: 10 }).map((_, i) => ({
@@ -212,7 +225,7 @@ const EnterpriseApp = () => {
 
                     // Delay the fetchPersonalityPreferences call by 5 minutes (300,000 ms)
                     setTimeout(() => {
-                        fetchPersonalityPreferences(getProfileId());
+                        fetchPersonalityPreferences();
                     }, 5000);                }
             });
 
@@ -346,7 +359,7 @@ const EnterpriseApp = () => {
                                     });
                                 }
                                 setTimeout(() => {
-                                    fetchPersonalityPreferences(getProfileId());
+                                    fetchPersonalityPreferences();
                                 }, 5000);                                }
                         }
                         />
