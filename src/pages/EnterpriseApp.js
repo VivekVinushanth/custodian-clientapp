@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     ThemeProvider, CssBaseline, Container, Paper, Grid, Typography,
-    TextField, Button, AppBar, Toolbar, IconButton, Badge, Dialog,
+    TextField, Button, IconButton, Badge, Dialog,
     DialogTitle, DialogContent, DialogActions, Box, Chip
 } from "@mui/material";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -56,23 +56,20 @@ const getBrowserInfo = () => {
     return { name: "Unknown", version: "" };
 };
 
-const EnterpriseApp = () => {
-    const { state, signIn, signOut, getDecodedIDToken, getAccessToken } = useAuthContext();
+const EnterpriseApp = ({ cart, setCart, cartOpen, setCartOpen, user, signIn, setMode }) => {
+    const { state, getDecodedIDToken, getAccessToken } = useAuthContext();
     const [geoInfo, setGeoInfo] = useState({ ip: "0.0.0.0", city: "Unknown", country: "Unknown", timezone: "UTC" });
-    const [user, setUser] = useState(null);
     const [anonName, setAnonName] = useState(() => getOrCreateAnonName());
-    const [cart, setCart] = useState([]);
     const [items, setItems] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const [cartOpen, setCartOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [preferences, setPreferences] = useState([]);
     const [newsletterOpen, setNewsletterOpen] = useState(false);
     const [newsletterEmail, setNewsletterEmail] = useState("");
     const [showNewsletterBanner, setShowNewsletterBanner] = useState(true);
     const [campaign2Count, setCampaign2Count] = useState(0);
     const [spendingCapability, setSpendingCapability] = useState("normal");
     const [traits, setTraits] = useState({});
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const hasSetInitialTheme = useRef(false);
 
     const fetchPersonalityPreferences = async () => {
         try {
@@ -148,6 +145,16 @@ const EnterpriseApp = () => {
         signOut();
     };
 
+    useEffect(() => {
+        fetchPersonalityPreferences()
+    }, []);
+
+    useEffect(() => {
+        if (!hasSetInitialTheme.current && traits?.preferred_theme) {
+            setMode(traits.preferred_theme);
+            hasSetInitialTheme.current = true;
+        }
+    }, [traits, setMode]);
 
     useEffect(() => {
 
@@ -291,44 +298,6 @@ const EnterpriseApp = () => {
                     </IconButton>
                 </Box>
             )}
-            <AppBar position="static">
-                <Toolbar sx={{ justifyContent: "space-between" }}>
-                    <Typography variant="h6">Enterprise E-Commerce</Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <IconButton color="inherit" onClick={() => {
-                            setCartOpen(true);
-                            tracker.track("cart_opened")
-                        }}>
-                            <Badge badgeContent={cart.length} color="secondary">
-                                <ShoppingCartIcon />
-                            </Badge>
-                        </IconButton>
-                        <Typography variant="body2">{user?.user_name || anonName}</Typography>
-                        {user ? (
-                            <Button onClick={handleLogout} variant="contained" color="secondary">
-                                Logout
-                            </Button>
-                        ) : (
-                            <Button
-                                onClick={() => {
-                                    if (!state?.isLoading) {
-                                        signIn();
-                                    } else {
-                                        console.warn("Auth SDK still initializing...");
-                                    }
-                                }}
-                                variant="contained"
-                                color="secondary"
-                                disabled={state?.isLoading}
-                            >
-                                Sign Up / Login
-                            </Button>
-                        )}
-
-                    </Box>
-                </Toolbar>
-            </AppBar>
-
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 {traits && Object.keys(traits).length > 0 && (
                     <EnterpriseAppBanner traits={traits} items={items} />
@@ -341,6 +310,24 @@ const EnterpriseApp = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     variant="outlined"
                     margin="normal"
+                    sx={{
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#23272b' : theme.palette.background.paper,
+                        color: (theme) => theme.palette.text.primary,
+                        input: {
+                            color: (theme) => theme.palette.text.primary,
+                        },
+                        '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                                borderColor: (theme) => theme.palette.mode === 'dark' ? '#555' : '#ccc',
+                            },
+                            '&:hover fieldset': {
+                                borderColor: (theme) => theme.palette.primary.main,
+                            },
+                            '&.Mui-focused fieldset': {
+                                borderColor: (theme) => theme.palette.primary.main,
+                            },
+                        },
+                    }}
                 />
                 <Box sx={{ my: 2, display: "flex", gap: 1, overflowX: "auto" }}>
                     {categories.map(cat => (
@@ -349,9 +336,20 @@ const EnterpriseApp = () => {
                             label={cat}
                             clickable
                             color={selectedCategory === cat ? "primary" : "default"}
+                            sx={{
+                                bgcolor: (theme) => selectedCategory === cat
+                                    ? (theme.palette.mode === 'dark' ? theme.palette.primary.dark : theme.palette.primary.main)
+                                    : (theme.palette.mode === 'dark' ? '#23272b' : '#f5f5f5'),
+                                color: (theme) => selectedCategory === cat
+                                    ? theme.palette.getContrastText(theme.palette.primary.main)
+                                    : (theme.palette.mode === 'dark' ? '#fff' : '#333'),
+                                border: selectedCategory === cat ? 'none' : '1px solid',
+                                borderColor: (theme) => selectedCategory === cat ? 'transparent' : (theme.palette.mode === 'dark' ? '#555' : '#ccc'),
+                                fontWeight: selectedCategory === cat ? 700 : 400
+                            }}
                             onClick={() => {
                                 setSelectedCategory(cat);
-                                if (cat !== "All") { // ✅ Condition added here
+                                if (cat !== "All") {
                                     tracker.track("category_searched", {
                                         action: "select_category",
                                         objecttype: "category",
@@ -360,8 +358,8 @@ const EnterpriseApp = () => {
                                 }
                                 setTimeout(() => {
                                     fetchPersonalityPreferences();
-                                }, 5000);                                }
-                        }
+                                }, 5000);
+                            }}
                         />
                     ))}
                 </Box>
